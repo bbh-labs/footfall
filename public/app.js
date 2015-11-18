@@ -60,10 +60,10 @@ function drawTimeline() {
 	}
 
 	// Calculate stepX
-	stepX = (windowWidth * 0.8) / 25;
+	stepX = (windowWidth * 0.765) / 25;
 
 	push();
-		translate(windowWidth * 0.1, 0);
+		translate(windowWidth * 0.11, 0);
 
 		// Grid
 		for (var i = 0; i < 26; i++) {
@@ -71,6 +71,7 @@ function drawTimeline() {
 			line(0, 0, i * stepX, 0); // Top line
 			line(0, TIMELINE_HEIGHT, i * stepX, TIMELINE_HEIGHT); // Below line
 		}
+	
 
 		// Legend
 		fill(50);
@@ -78,10 +79,11 @@ function drawTimeline() {
 		var legendText = 'Number of people inside the store';
 		var legendWidth = textWidth(legendText);
 		textAlign(LEFT);
-		text(legendText, windowWidth * 0.8 - legendWidth - 10, 22);
+		text(legendText, windowWidth * 0.475 - legendWidth - 10, 22);
 		textAlign(CENTER);
 		fill(185, 235, 223, 200)
-		rect(windowWidth * 0.8 - legendWidth - 30, 10, 15, 15);
+		rect(windowWidth * 0.475 - legendWidth - 30, 10, 15, 15);
+
 
 		// Number of people 
 		beginShape();
@@ -102,9 +104,11 @@ function drawTimeline() {
 			ellipse((i+1) * stepX, TIMELINE_HEIGHT - PPH[i] * stepY, 8, 8);
 		}
 
-		// Scale-Y
-		fill(90, 180, 160);
-		text(maxPPH, 10, TIMELINE_HEIGHT * 0.2);
+		// Y-axis
+		fill(50);
+		text(maxPPH, 0, TIMELINE_HEIGHT * 0.2);
+		text(maxPPH/2, 0, TIMELINE_HEIGHT * 0.6);
+		text(0, 0, TIMELINE_HEIGHT * 1);
 
 		// Time Bar
 		fill(17, 56, 83);

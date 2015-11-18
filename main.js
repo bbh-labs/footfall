@@ -102,6 +102,7 @@ function tick() {
 	setTimeout(tick, 60000);
 }
 
+/*
 function checkPeople(bodies) {
 	// Register people who are being tracked
 	for (var body of bodies) {
@@ -155,3 +156,4 @@ function checkPeople(bodies) {
 		}
 	}
 }
+*/

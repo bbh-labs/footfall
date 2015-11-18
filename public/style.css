@@ -1,6 +1,7 @@
 body {
 	margin: 0;
 	overflow-x: hidden;
+	font-family: "Verdana", Geneva, sans-serif;
 }
 
 .cyan {
@@ -62,11 +63,11 @@ body {
 }
 
 #total-visits {
-	background: #a4d4e8;
+	background: #a4e4d8;
 	box-shadow: 0 0 0 8px #1cbb9d, 0 0 0 16px #113853, 0 0 0 18px #1cbb9d;
 	border-radius: 50%;
 	font-size: 4rem;
-	padding: 4vw;
+	padding: 4vw 5vw;
 	margin: 0;
 }
 
