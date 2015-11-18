@@ -60,7 +60,7 @@ function drawTimeline() {
 	}
 
 	// Calculate stepX
-	stepX = (windowWidth * 0.765) / 25;
+	stepX = (windowWidth * 0.8) / 25;
 
 	push();
 		translate(windowWidth * 0.11, 0);
