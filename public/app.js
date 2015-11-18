@@ -63,7 +63,7 @@ function drawTimeline() {
 	stepX = (windowWidth * 0.8) / 25;
 
 	push();
-		translate(windowWidth * 0.11, 0);
+		translate(windowWidth * 0.1, 0);
 
 		// Grid
 		for (var i = 0; i < 26; i++) {
@@ -71,7 +71,7 @@ function drawTimeline() {
 			line(0, 0, i * stepX, 0); // Top line
 			line(0, TIMELINE_HEIGHT, i * stepX, TIMELINE_HEIGHT); // Below line
 		}
-	
+
 
 		// Legend
 		fill(50);
