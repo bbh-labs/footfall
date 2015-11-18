@@ -6,7 +6,8 @@ var app = express();
 var date = new Date();
 var timeline = new Array(1440);
 var tracks = {};
-var numPeople = 0;
+var PPM = 0;
+var currentVisitors = 0;
 var peopleEntered = 0;
 var peopleExited = 0;
 
@@ -22,7 +23,7 @@ if (fs.existsSync(date.toDateString() + '.json')) {
 		
 		var index = date.getHours() * 60 + date.getMinutes();
 		if (typeof(timeline[index]) == 'number') {
-			numPeople = timeline[index];
+			PPM = timeline[index];
 		}
 	} catch (error) {
 		console.log('Didn\'t find timeline for the date:', dateString);
@@ -55,11 +56,11 @@ app.get('/timeline', function(r, w) {
 });
 
 app.get('/tracks', function(r, w) {
-	w.send({ tracks: tracks, count: numPeople, peopleEntered: peopleEntered, peopleExited: peopleExited });
+	w.send({ tracks: tracks, count: PPM, peopleEntered: peopleEntered, peopleExited: peopleExited });
 });
 
 app.get('/current', function(r, w) {
-	w.send({ count: numPeople });
+	w.send({ count: currentVisitors });
 });
 
 server = app.listen(8080, function() {
@@ -87,15 +88,16 @@ function tick() {
 	// Clear timeline if new day started
 	if (index == 0) {
 		timeline = new Array(1440);
+		currentVisitors = 0;
 	}
 
 	// Save to file
 	var filename = date.toDateString() + '.json';
-	timeline[index] = numPeople;
+	timeline[index] = PPM;
 	fs.writeFile(filename, JSON.stringify(timeline));
 
 	// Reset numbers
-	numPeople = 0;
+	PPM = 0;
 	peopleEntered = 0;
 	peopleExited = 0;
 
@@ -146,10 +148,12 @@ function checkPeople(bodies) {
 			var z2 = tracks[id].z2;
 			var dz = tracks[id].z1 - tracks[id].z2;
 			if (z1 > EXIT_DEPTH && z2 < ENTER_DEPTH) {
-				numPeople++;
+				PPM++;
+				currentVisitors++;
 				peopleEntered++;
 			} else if (z2 > EXIT_DEPTH) {
-				numPeople = Math.max(numPeople - 1, 0);
+				PPM = Math.max(PPM - 1, 0);
+				currentVisitors = Math.max(currentVisitors - 1, 0);
 				peopleExited++;
 			}
 			delete tracks[id];
