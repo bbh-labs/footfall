@@ -1,4 +1,4 @@
-//var Kinect2 = require('kinect2');
+var Kinect2 = require('kinect2');
 var fs = require('fs');
 var express = require('express');
 var app = express();
@@ -69,7 +69,6 @@ server = app.listen(8080, function() {
 	console.log('PeopleTracker is listening at http://%s:%s', host, port);
 });
 
-/*
 kinect = new Kinect2();
 if (kinect.open()) {
 	kinect.on('bodyFrame', function(bodyFrame) {
@@ -79,7 +78,6 @@ if (kinect.open()) {
 
 	setTimeout(tick, 60000);
 }
-*/
 
 function tick() {
 	date = new Date();
@@ -104,7 +102,6 @@ function tick() {
 	setTimeout(tick, 60000);
 }
 
-/*
 function checkPeople(bodies) {
 	// Register people who are being tracked
 	for (var body of bodies) {
@@ -160,4 +157,3 @@ function checkPeople(bodies) {
 		}
 	}
 }
-*/
