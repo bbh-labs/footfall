@@ -1,8 +1,9 @@
 var TIMELINE_HEIGHT = 200;
 
+// Data
 var PPM, // People per minute
     PPH, // People per hour
-    tracks = {},
+    dates,
     maxPPH = 0, // Max PPH
     minPPH = 0, // Min PPH
     totalVisits = 0,
@@ -11,16 +12,17 @@ var PPM, // People per minute
     currentVisitors = 0,
     popularHours = [],
     unpopularHours = [],
-    date = new Date();
+    dateIndex = 0;
 
-var fetchTimelineID,
-    fetchTracksID;
+// Timeouts
+var fetchTimelineID;
 
+// Processing
 var stepX,
-    stepY;
+    stepY,
+    bShouldRedraw = false;
 
-var bShouldRedraw = false;
-
+// HTML elements
 var popularHoursElement,
     unpopularHoursElement,
     totalVisitsElement,
@@ -28,27 +30,25 @@ var popularHoursElement,
     dayElement;
 
 function setup() {
-	noLoop();
-
 	var canvas = createCanvas(windowWidth, 260);
 	canvas.parent('canvas-container');
 	background(255);
 	stroke(245);
 	textAlign(CENTER);
 
-	fetchTimeline();
-	fetchCurrent();
-
 	popularHoursElement = document.getElementById('popular-hours');
 	unpopularHoursElement = document.getElementById('unpopular-hours');
 	totalVisitsElement = document.getElementById('total-visits');
 	currentVisitorsElement = document.getElementById('current-visitors');
 	dayElement = document.getElementById('day');
+
+	fetchDates();
+
+	noLoop();
 }
 
 function windowResized() {
 	resizeCanvas(windowWidth, 260);
-	background(255);
 	stroke(245);
 	textAlign(CENTER);
 
@@ -60,73 +60,75 @@ function drawTimeline() {
 		return;
 	}
 
+	background(255);
+
 	// Calculate stepX
 	stepX = (windowWidth * 0.8) / 25;
 
 	push();
-		translate(windowWidth * 0.1, 0);
+	translate(windowWidth * 0.1, 0);
 
-		// Grid
-		for (var i = 0; i < 26; i++) {
-			line(i * stepX, 0, i * stepX, TIMELINE_HEIGHT); // Row
-			line(0, 0, i * stepX, 0); // Top line
-			line(0, TIMELINE_HEIGHT, i * stepX, TIMELINE_HEIGHT); // Below line
+	// Grid
+	for (var i = 0; i < 26; i++) {
+		line(i * stepX, 0, i * stepX, TIMELINE_HEIGHT); // Row
+		line(0, 0, i * stepX, 0); // Top line
+		line(0, TIMELINE_HEIGHT, i * stepX, TIMELINE_HEIGHT); // Below line
+	}
+
+
+	// Legend
+	fill(50);
+	textSize(12);
+	var legendText = 'Number of people inside the store';
+	var legendWidth = textWidth(legendText);
+	textAlign(LEFT);
+	text(legendText, windowWidth * 0.475 - legendWidth - 10, 22);
+	textAlign(CENTER);
+	fill(185, 235, 223, 200)
+	rect(windowWidth * 0.475 - legendWidth - 30, 10, 15, 15);
+
+
+	// Number of people 
+	beginShape();
+	fill(185, 235, 223, 200); // Light green
+	noStroke();
+	for (var i = 0; i < 24; i++) {
+		vertex((i + 1) * stepX, TIMELINE_HEIGHT - PPH[i] * stepY); // Shape
+	};
+	vertex(24 * stepX, 200);
+	vertex(stepX, 200);
+	endShape(CLOSE);	
+
+	// Dots
+	fill(90, 180, 160);
+	stroke(255);
+	textSize(10);
+	for(var i = 0; i < 24; i++) {
+		ellipse((i+1) * stepX, TIMELINE_HEIGHT - PPH[i] * stepY, 8, 8);
+	}
+
+	// Y-axis
+	fill(50);
+	text(maxPPH, 0, TIMELINE_HEIGHT * 0.2);
+	text(maxPPH/2, 0, TIMELINE_HEIGHT * 0.6);
+	text(0, 0, TIMELINE_HEIGHT * 1);
+
+	// Time Bar
+	fill(17, 56, 83);
+	rect(0, TIMELINE_HEIGHT, 25 * stepX, 55);
+	noStroke();
+	fill(255);
+	textSize(14);
+	for(var i = 0; i < 24; i++) {
+		var x = (i + 1) * stepX;
+		var y = TIMELINE_HEIGHT + 20;
+		text(i % 12 + 1, x, y);
+		if (i == 0 || i == 23) {
+			text('AM', x, y + 20);
+		} else if (i == 11) {
+			text('PM', x, y + 20);
 		}
-
-
-		// Legend
-		fill(50);
-		textSize(12);
-		var legendText = 'Number of people inside the store';
-		var legendWidth = textWidth(legendText);
-		textAlign(LEFT);
-		text(legendText, windowWidth * 0.475 - legendWidth - 10, 22);
-		textAlign(CENTER);
-		fill(185, 235, 223, 200)
-		rect(windowWidth * 0.475 - legendWidth - 30, 10, 15, 15);
-
-
-		// Number of people 
-		beginShape();
-		fill(185, 235, 223, 200); // Light green
-		noStroke();
-		for (var i = 0; i < 24; i++) {
-			vertex((i + 1) * stepX, TIMELINE_HEIGHT - PPH[i] * stepY); // Shape
-		};
-		vertex(24 * stepX, 200);
-		vertex(stepX, 200);
-		endShape(CLOSE);	
-
-		// Dots
-		fill(90, 180, 160);
-		stroke(255);
-		textSize(10);
-		for(var i = 0; i < 24; i++) {
-			ellipse((i+1) * stepX, TIMELINE_HEIGHT - PPH[i] * stepY, 8, 8);
-		}
-
-		// Y-axis
-		fill(50);
-		text(maxPPH, 0, TIMELINE_HEIGHT * 0.2);
-		text(maxPPH/2, 0, TIMELINE_HEIGHT * 0.6);
-		text(0, 0, TIMELINE_HEIGHT * 1);
-
-		// Time Bar
-		fill(17, 56, 83);
-		rect(0, TIMELINE_HEIGHT, 25 * stepX, 55);
-		noStroke();
-		fill(255);
-		textSize(14);
-		for(var i = 0; i < 24; i++) {
-			var x = (i + 1) * stepX;
-			var y = TIMELINE_HEIGHT + 20;
-			text(i % 12 + 1, x, y);
-			if (i == 0 || i == 23) {
-				text('AM', x, y + 20);
-			} else if (i == 11) {
-				text('PM', x, y + 20);
-			}
-		}
+	}
 
 	pop();
 }
@@ -152,24 +154,60 @@ function mouseMoved() {
 		drawTimeline();
 		bShouldRedraw = false;
 	}
-
 }
 
-function fetchTimeline(d) {
+function fetchDates() {
+	$.ajax({
+		url: '/dates',
+		method: 'GET',
+		dataType: 'json',
+	}).done(function(dates_) {
+		console.log('Loaded dates');
+
+		dates = dates_;
+		if (dates.length == 0) {
+			return;
+		}
+
+		dates.sort(function(a, b) {
+			return b - a;
+		});
+
+		dateIndex = 0;
+		fetchTimeline();
+	}).fail(function(resp) {
+		alert('Failed to fetch dates!');
+	});
+}
+
+function fetchTimeline(direction) {
+	if (dates.length == 0) {
+		return;
+	}
+
+	if (typeof(direction) == 'undefined') {
+		direction = 0;
+	}
+
+	var tmpIndex = dateIndex + direction;
+	if (tmpIndex < 0 || tmpIndex >= dates.length) {
+		tmpIndex = dateIndex;
+	}
+
+	var time = dates[tmpIndex];
+
 	$.ajax({
 		url: '/timeline',
 		method: 'GET',
-		data: d ? { date: d.getTime() } : undefined,
+		data: { time: time },
 		dataType: 'json',
 	}).done(function(data) {
-		background(255);
-
-		PPM = data;
-		if (d) {
-			date = d;
-		}
+		var date = new Date(time);
+		dateIndex = tmpIndex;
+		console.log(time);
 
 		// Count PPH, max and min PPH
+		PPM = data;
 		PPH = new Array(24);
 		for (var i = 0; i < 24; i++) {
 			var tmpCount = 0;
@@ -320,21 +358,6 @@ function fetchTimeline(d) {
 	});
 }
 
-function fetchTracks() {
-	$.ajax({
-		url: '/tracks',
-		method: 'GET',
-		dataType: 'json',
-	}).done(function(data) {
-		tracks = data.tracks;
-		peopleEntered = data.peopleEntered;
-		peopleExited = data.peopleExited;
-		fetchTracksID = window.setTimeout(fetchTracks, 33);
-	}).fail(function(response) {
-		fetchTracksID = window.setTimeout(fetchTracks, 1000);
-	});
-}
-
 function fetchCurrent() {
 	$.ajax({
 		url: '/current',
@@ -350,29 +373,12 @@ function fetchCurrent() {
 }
 
 function keyReleased() {
-	if (key == ' ') {
-		state = state == 'timeline' ? 'tracks' : 'timeline';
-		if (state == 'timeline') {
-			clearTimeout(fetchTracksID);
-			fetchTimeline();
-		} else {
-			clearTimeout(fetchTimelineID);
-			fetchTracks();
-		}
-	}
-
 	if (keyCode == LEFT_ARROW) {
-		if (date) {
-			var previous = new Date(date.getTime() - 86400 * 1000);
-			fetchTimeline(previous);
-		}
+		fetchTimeline(-1);
 	}
 
 	if (keyCode == RIGHT_ARROW) {
-		if (date) {
-			var next = new Date(date.getTime() + 86400 * 1000);
-			fetchTimeline(next);
-		}
+		fetchTimeline(1);
 	}
 }
 
