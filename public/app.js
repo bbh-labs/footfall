@@ -10,7 +10,8 @@ var PPM, // People per minute
     peopleExited = 0,
     currentVisitors = 0,
     popularHours = [],
-    unpopularHours = [];
+    unpopularHours = [],
+    date = new Date();
 
 var fetchTimelineID,
     fetchTracksID;
@@ -154,14 +155,19 @@ function mouseMoved() {
 
 }
 
-function fetchTimeline(date) {
+function fetchTimeline(d) {
 	$.ajax({
 		url: '/timeline',
 		method: 'GET',
-		data: date ? { date: date.getTime() } : undefined,
+		data: d ? { date: d.getTime() } : undefined,
 		dataType: 'json',
 	}).done(function(data) {
+		background(255);
+
 		PPM = data;
+		if (d) {
+			date = d;
+		}
 
 		// Count PPH, max and min PPH
 		PPH = new Array(24);
@@ -294,7 +300,7 @@ function fetchTimeline(date) {
 
 		// Update day element if necessary
 		var day;
-		switch (new Date().getDay()) {
+		switch (date.getDay()) {
 		case 0: day = 'Sunday'; break;
 		case 1: day = 'Monday'; break;
 		case 2: day = 'Tuesday'; break;
@@ -352,6 +358,20 @@ function keyReleased() {
 		} else {
 			clearTimeout(fetchTimelineID);
 			fetchTracks();
+		}
+	}
+
+	if (keyCode == LEFT_ARROW) {
+		if (date) {
+			var previous = new Date(date.getTime() - 86400 * 1000);
+			fetchTimeline(previous);
+		}
+	}
+
+	if (keyCode == RIGHT_ARROW) {
+		if (date) {
+			var next = new Date(date.getTime() + 86400 * 1000);
+			fetchTimeline(next);
 		}
 	}
 }

@@ -33,24 +33,26 @@ if (fs.existsSync(date.toDateString() + '.json')) {
 app.use(express.static('public'));
 
 app.get('/timeline', function(r, w) {
-	if (typeof(r.query.date) == 'number') {
-		if (date.getTime() != r.query.date) {
-			var tmpDate = new Date(r.query.date);
+	if (r.query.date) {
+		var time = parseInt(r.query.date);
+		if (date.getTime() != time) {
+			var tmpDate = new Date(time);
 			try {
 				var data = fs.readFileSync(tmpDate.toDateString() + '.json');
-				date = tmpDate;
 				timeline = JSON.parse(data);
 				w.send(timeline);
-				return;
 			} catch (error) {
+				timeline = new Array(1440);
 				w.sendStatus(404);
 			}
+			return;
 		}
 	}
 
 	if (typeof(timeline) == 'object') {
 		w.send(timeline);
 	} else {
+		timeline = new Array(1440);
 		w.sendStatus(404);
 	}
 });
