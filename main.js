@@ -1,75 +1,8 @@
 var Kinect2 = require('kinect2');
-var fs = require('fs');
-var express = require('express');
-var app = express();
-
-var date = new Date();
-var timeline = new Array(1440);
-var tracks = {};
-var PPM = 0;
-var currentVisitors = 0;
-var peopleEntered = 0;
-var peopleExited = 0;
+var bodies = {};
 
 const ENTER_DEPTH = 2;
 const EXIT_DEPTH = 3.5;
-
-if (fs.existsSync(date.toDateString() + '.json')) {
-	var dateString = date.toDateString();
-	var data = fs.readFileSync(dateString + '.json');
-	try {
-		timeline = JSON.parse(data);
-		console.log('Loaded timeline ' + dateString);
-		
-		var index = date.getHours() * 60 + date.getMinutes();
-		if (typeof(timeline[index]) == 'number') {
-			PPM = timeline[index];
-		}
-	} catch (error) {
-		console.log('Didn\'t find timeline for the date:', dateString);
-	}
-}
-
-app.use(express.static('public'));
-
-app.get('/timeline', function(r, w) {
-	if (r.query.date) {
-		var time = parseInt(r.query.date);
-		if (date.getTime() != time) {
-			var tmpDate = new Date(time);
-			try {
-				var data = fs.readFileSync(tmpDate.toDateString() + '.json');
-				timeline = JSON.parse(data);
-				w.send(timeline);
-			} catch (error) {
-				timeline = new Array(1440);
-				w.sendStatus(404);
-			}
-			return;
-		}
-	}
-
-	if (typeof(timeline) == 'object') {
-		w.send(timeline);
-	} else {
-		timeline = new Array(1440);
-		w.sendStatus(404);
-	}
-});
-
-app.get('/tracks', function(r, w) {
-	w.send({ tracks: tracks, count: PPM, peopleEntered: peopleEntered, peopleExited: peopleExited });
-});
-
-app.get('/current', function(r, w) {
-	w.send({ count: currentVisitors });
-});
-
-server = app.listen(8080, function() {
-	var host = server.address().address;
-	var port = server.address().port;
-	console.log('PeopleTracker is listening at http://%s:%s', host, port);
-});
 
 kinect = new Kinect2();
 if (kinect.open()) {
@@ -77,31 +10,6 @@ if (kinect.open()) {
 		checkPeople(bodyFrame.bodies);
 	});
 	kinect.openBodyReader();
-
-	setTimeout(tick, 60000);
-}
-
-function tick() {
-	date = new Date();
-	var index = date.getHours() * 60 + date.getMinutes();
-
-	// Clear timeline if new day started
-	if (index == 0) {
-		timeline = new Array(1440);
-		currentVisitors = 0;
-	}
-
-	// Save to file
-	var filename = date.toDateString() + '.json';
-	timeline[index] = PPM;
-	fs.writeFile(filename, JSON.stringify(timeline));
-
-	// Reset numbers
-	PPM = 0;
-	peopleEntered = 0;
-	peopleExited = 0;
-
-	setTimeout(tick, 60000);
 }
 
 function checkPeople(bodies) {
@@ -113,16 +21,16 @@ function checkPeople(bodies) {
 
 		var x = body.joints[3].cameraX;
 		var z = body.joints[3].cameraZ;
-		if (tracks.hasOwnProperty(body.trackingId)) {
-			var track = tracks[body.trackingId];
+		if (bodies.hasOwnProperty(body.trackingId)) {
+			var track = bodies[body.trackingId];
 			track.x = x;
 			if (z >= 0.5) {
 				track.z2 = z;
 			}
-			tracks[body.trackingId] = track;
+			bodies[body.trackingId] = track;
 		} else {
 			if (z < ENTER_DEPTH || z > EXIT_DEPTH) {
-				tracks[body.trackingId] = {
+				bodies[body.trackingId] = {
 					z1: z,
 					z2: z,
 					x: x,
@@ -133,7 +41,7 @@ function checkPeople(bodies) {
 	}
 
 	// Check if anyone entered or left
-	for (var id of Object.keys(tracks)) {
+	for (var id of Object.keys(bodies)) {
 		var found = false;
 		for (var body of bodies) {
 			if (body.trackingId == id) {
@@ -143,19 +51,38 @@ function checkPeople(bodies) {
 		}
 
 		if (!found) {
-			var z1 = tracks[id].z1;
-			var z2 = tracks[id].z2;
-			var dz = tracks[id].z1 - tracks[id].z2;
+			var z1 = bodies[id].z1;
+			var z2 = bodies[id].z2;
+			var dz = bodies[id].z1 - bodies[id].z2;
 			if (z1 > EXIT_DEPTH && z2 < ENTER_DEPTH) {
-				PPM++;
-				currentVisitors++;
-				peopleEntered++;
+				$.ajax({ url: '/data', method: 'POST' });
 			} else if (z2 > EXIT_DEPTH) {
-				PPM = Math.max(PPM - 1, 0);
-				currentVisitors = Math.max(currentVisitors - 1, 0);
-				peopleExited++;
+				$.ajax({ url: '/data', method: 'DELETE' });
 			}
-			delete tracks[id];
+			delete bodies[id];
 		}
 	}
+
+	// Update server
+	$.ajax({
+		url: '/bodies',
+		method: 'POST',
+		data: { bodies: JSON.stringify(bodies) },
+	}).done(function(resp) {
+		console.log('Updated bodies');
+	}).fail(function(resp) {
+		console.log('Failed to update bodies');
+	});
+}
+
+function newArray(length) {
+	if (!length) {
+		return new Array();
+	}
+
+	var array = new Array(length);
+	for (var i in array) {
+		array[i] = 0;
+	}
+	return array;
 }
