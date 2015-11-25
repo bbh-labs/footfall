@@ -5,14 +5,15 @@ var bodies = {};
 var hostURL = "";
 var enterDepth = 2;
 var exitDepth = 3.5;
+var location = "somewhere";
 
 try {
 	var buffer = fs.readFileSync("config.json");
 	var config = buffer.toJSON();
-	hostURL = config.hostURL;
-	enterDepth = config.enterDepth;
-	exitDepth = config.exitDepth;
-	console.log(config);
+	hostURL = config.hostURL ? config.hostURL : hostURL;
+	enterDepth = config.enterDepth ? config.enterDepth : enterDepth;
+	exitDepth = config.exitDepth ? config.exitDepth : exitDepth;
+	location = config.location ? config.location : location;
 } catch (error) {
 	// Do nothing
 }
@@ -80,7 +81,10 @@ function checkPeople(bodies) {
 	$.ajax({
 		url: hostURL + '/bodies',
 		method: 'POST',
-		data: { bodies: JSON.stringify(bodies) },
+		data: {
+			bodies: JSON.stringify(bodies),
+			location: location,
+		},
 	}).done(function(resp) {
 		console.log('Updated bodies');
 	}).fail(function(resp) {
