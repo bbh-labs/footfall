@@ -1,8 +1,21 @@
+var fs = require('fs');
 var Kinect2 = require('kinect2');
 var bodies = {};
 
-const ENTER_DEPTH = 2;
-const EXIT_DEPTH = 3.5;
+var hostURL = "";
+var enterDepth = 2;
+var exitDepth = 3.5;
+
+try {
+	var buffer = fs.readFileSync("config.json");
+	var config = buffer.toJSON();
+	hostURL = config.hostURL;
+	enterDepth = config.enterDepth;
+	exitDepth = config.exitDepth;
+	console.log(config);
+} catch (error) {
+	// Do nothing
+}
 
 kinect = new Kinect2();
 if (kinect.open()) {
@@ -29,12 +42,12 @@ function checkPeople(bodies) {
 			}
 			bodies[body.trackingId] = track;
 		} else {
-			if (z < ENTER_DEPTH || z > EXIT_DEPTH) {
+			if (z < enterDepth || z > exitDepth) {
 				bodies[body.trackingId] = {
 					z1: z,
 					z2: z,
 					x: x,
-					state: z < ENTER_DEPTH ? 'exiting' : 'entering',
+					state: z < enterDepth ? 'exiting' : 'entering',
 				};
 			}
 		}
@@ -54,10 +67,10 @@ function checkPeople(bodies) {
 			var z1 = bodies[id].z1;
 			var z2 = bodies[id].z2;
 			var dz = bodies[id].z1 - bodies[id].z2;
-			if (z1 > EXIT_DEPTH && z2 < ENTER_DEPTH) {
-				$.ajax({ url: '/data', method: 'POST' });
-			} else if (z2 > EXIT_DEPTH) {
-				$.ajax({ url: '/data', method: 'DELETE' });
+			if (z1 > exitDepth && z2 < enterDepth) {
+				$.ajax({ url: hostURL + '/data', method: 'POST' });
+			} else if (z2 > exitDepth) {
+				$.ajax({ url: hostURL + '/data', method: 'DELETE' });
 			}
 			delete bodies[id];
 		}
@@ -65,7 +78,7 @@ function checkPeople(bodies) {
 
 	// Update server
 	$.ajax({
-		url: '/bodies',
+		url: hostURL + '/bodies',
 		method: 'POST',
 		data: { bodies: JSON.stringify(bodies) },
 	}).done(function(resp) {
